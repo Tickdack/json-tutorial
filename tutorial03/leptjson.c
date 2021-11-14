@@ -99,10 +99,31 @@ static int lept_parse_string(lept_context* c, lept_value* v) {
                 lept_set_string(v, (const char*)lept_context_pop(c, len), len);
                 c->json = p;
                 return LEPT_PARSE_OK;
+            case '\\':
+                switch (*p++) {
+                    case '\"':   PUTC(c, '\"'); break;
+                    case '\\':   PUTC(c, '\\'); break;
+                    case '/':   PUTC(c, '\/'); break;
+                    case 'b':   PUTC(c, '\b'); break;
+                    case 'f':   PUTC(c, '\f'); break;
+                    case 'n':   PUTC(c, '\n'); break;
+                    case 'r':   PUTC(c, '\r'); break;
+                    case 't':   PUTC(c, '\t'); break;
+                    default:
+                        c->top = 0;
+                        lept_free(&v);
+                        return LEPT_PARSE_INVALID_STRING_ESCAPE;
+                }
+                break;
             case '\0':
                 c->top = head;
                 return LEPT_PARSE_MISS_QUOTATION_MARK;
             default:
+                if (ch >= 0 && ch <= 31) {
+                    c->top = 0;
+                    lept_free(&v);
+                    return LEPT_PARSE_INVALID_STRING_CHAR;
+                }
                 PUTC(c, ch);
         }
     }
@@ -154,11 +175,14 @@ lept_type lept_get_type(const lept_value* v) {
 
 int lept_get_boolean(const lept_value* v) {
     /* \TODO */
-    return 0;
+    assert(v != NULL && (v->type == LEPT_TRUE || v -> type == LEPT_FALSE));
+    return v->type == LEPT_TRUE ? 1 : 0;
 }
 
 void lept_set_boolean(lept_value* v, int b) {
     /* \TODO */
+    assert(v != NULL && (b == 0 || b == 1));
+    v->type = b == 1 ? LEPT_TRUE : LEPT_FALSE;
 }
 
 double lept_get_number(const lept_value* v) {
@@ -168,6 +192,9 @@ double lept_get_number(const lept_value* v) {
 
 void lept_set_number(lept_value* v, double n) {
     /* \TODO */
+    assert(v != NULL);
+    v->type = LEPT_NUMBER;
+    v->u.n = n;
 }
 
 const char* lept_get_string(const lept_value* v) {

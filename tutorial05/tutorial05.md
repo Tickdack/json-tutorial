@@ -224,6 +224,6 @@ static int lept_parse_value(lept_context* c, lept_value* v) {
 
 4. 开启 test.c 中两处被 `#if 0 ... #endif` 关闭的测试，本来 `lept_parse_array()` 已经能处理这些测试。然而，运行时会发现 `Assertion failed: (c.top == 0)` 断言失败。这是由于，当错误发生时，仍然有一些临时值在堆栈里，既没有放进数组，也没有被释放。修改 `lept_parse_array()`，当遇到错误时，从堆栈中弹出并释放那些临时值，然后才返回错误码。
 
-5. 第 4 节那段代码为什么会有 bug？
+5.  第 4 节那段代码为什么会有 bug？
 
 如果你遇到问题，有不理解的地方，或是有建议，都欢迎在评论或 [issue](https://github.com/miloyip/json-tutorial/issues) 中提出，让所有人一起讨论。

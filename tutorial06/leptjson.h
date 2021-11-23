@@ -46,6 +46,8 @@ int lept_parse(lept_value* v, const char* json);
 
 void lept_free(lept_value* v);
 
+void lept_member_free(lept_member* o);
+
 lept_type lept_get_type(const lept_value* v);
 
 #define lept_set_null(v) lept_free(v)

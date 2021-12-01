@@ -161,3 +161,4 @@ leptjson 重复利用了 `lept_context` 中的数据结构作为输出缓冲，�
 3. 在你的 `lept_stringify_string()` 是否使用了多次 `PUTC()`？如果是，它每次输出一个字符时，都要检测缓冲区是否有足够空间（不够时需扩展）。能否优化这部分的性能？这种优化有什么代价么？
 
 如果你遇到问题，有不理解的地方，或是有建议，都欢迎在评论或 [issue](https://github.com/miloyip/json-tutorial/issues) 中提出，让所有人一起讨论。
+

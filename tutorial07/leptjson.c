@@ -346,8 +346,86 @@ int lept_parse(lept_value* v, const char* json) {
     return ret;
 }
 
+//将一个4位二进制数转换成字符串
+static char lept_stringify_hex4(unsigned u){
+    if (u > 9)   return 'A' + u - 10;
+    else        return u + '0';
+}
+
 static void lept_stringify_string(lept_context* c, const char* s, size_t len) {
     /* ... */
+    if (len == 0) {
+        char* tmp = (char*)lept_context_push(c, 2);
+        tmp[0] = '\"';
+        tmp[1] = '\"';
+        return;
+    }
+    char* str = (char*)malloc(len * 6 + 3);
+    size_t tlen = 0;
+    str[tlen++] = '\"';
+    for (size_t i = 0; i < len; ++i) {
+        str[tlen++] = '\\';
+        switch (s[i]) {
+            case '\"':   str[tlen++] = '\"';  break;
+            case '\\':   str[tlen++] = '\\';  break;
+            //case '/':    str[tlen++] = '/';  break;
+            case '\b':   str[tlen++] = 'b';  break;
+            case '\f':   str[tlen++] = 'f';  break;
+            case '\n':   str[tlen++] = 'n';  break;
+            case '\r':   str[tlen++] = 'r';  break;
+            case '\t':   str[tlen++] = 't';  break;
+            default: {
+                unsigned tmp = (unsigned)s[i];
+                if (tmp >= 0 && tmp < 32) {
+                    str[tlen++] = 'u';
+                    str[tlen++] = '0';
+                    str[tlen++] = '0';
+                    str[tlen++] = lept_stringify_hex4((tmp >> 4) & 0xF);
+                    str[tlen++] = lept_stringify_hex4(tmp & 0xF);
+                }
+                else if (tmp > 127) {
+                    str[tlen++] = 'u';
+                    if ((tmp & 0xF0) == 0xF0) {
+                        unsigned u = (tmp & 0x08) << 18;
+                        u |= (s[++i] & 0x3F) << 12;
+                        u |= (s[++i] & 0x3F) << 6;
+                        u |= (s[++i] & 0x3F);
+                        if ((u >> 20) & 0xF == 1)
+                            str[tlen++] = '1';
+                        str[tlen++] = lept_stringify_hex4((u >> 16) & 0xF);
+                        str[tlen++] = lept_stringify_hex4((u >> 12) & 0xF);
+                        str[tlen++] = lept_stringify_hex4((u >> 8) & 0xF);
+                        str[tlen++] = lept_stringify_hex4((u >> 4) & 0xF);
+                        str[tlen++] = lept_stringify_hex4(u & 0xF);
+                    }
+                    else if ((tmp & 0xE0) == 0xE0) {
+                        unsigned u = (tmp & 0xF) << 12;
+                        u |= (s[++i] & 0x3F) << 6;
+                        u |= (s[++i] & 0x3F);
+                        str[tlen++] = lept_stringify_hex4((u >> 12) & 0xF);
+                        str[tlen++] = lept_stringify_hex4((u >> 8) & 0xF);
+                        str[tlen++] = lept_stringify_hex4((u >> 4) & 0xF);
+                        str[tlen++] = lept_stringify_hex4(u & 0xF);
+                    }
+                    else if ((tmp & 0xC0) == 0xC0) {
+                        unsigned u = (tmp & 0x1F) << 6;
+                        u |= (s[++i] & 0x3F);
+                        str[tlen++] = '0';
+                        str[tlen++] = lept_stringify_hex4((u >> 8) & 0xF);
+                        str[tlen++] = lept_stringify_hex4((u >> 4) & 0xF);
+                        str[tlen++] = lept_stringify_hex4(u & 0xF);
+                    }
+                }
+                else {
+                    str[tlen - 1] = s[i];
+                }
+                break;
+            }
+        }
+    }
+    str[tlen++] = '\"';
+    memcpy((char*)lept_context_push(c, tlen), str, tlen);
+    free(str);
 }
 
 static void lept_stringify_value(lept_context* c, const lept_value* v) {
@@ -359,9 +437,25 @@ static void lept_stringify_value(lept_context* c, const lept_value* v) {
         case LEPT_STRING: lept_stringify_string(c, v->u.s.s, v->u.s.len); break;
         case LEPT_ARRAY:
             /* ... */
+            PUTC(c, '[');
+            for (int i = 0; i < v->u.a.size; ++i) {
+                lept_stringify_value(c, v->u.a.e + i);
+                if(i < v->u.a.size - 1)
+                    PUTC(c, ',');
+            }
+            PUTC(c, ']');
             break;
         case LEPT_OBJECT:
             /* ... */
+            PUTC(c, '{');
+            for (int i = 0; i < v->u.o.size; ++i) {
+                lept_stringify_string(c, (v->u.o.m + i)->k, (v->u.o.m + i)->klen);
+                PUTC(c, ':');
+                lept_stringify_value(c, &((v->u.o.m + i)->v));
+                if (i < v->u.o.size - 1)
+                    PUTC(c, ',');
+            }
+            PUTC(c, '}');
             break;
         default: assert(0 && "invalid type");
     }

@@ -554,7 +554,6 @@ static void test_access_array() {
     size_t i, j;
 
     lept_init(&a);
-
     for (j = 0; j <= 5; j += 5) {
         lept_set_array(&a, j);
         EXPECT_EQ_SIZE_T(0, lept_get_array_size(&a));
@@ -575,7 +574,6 @@ static void test_access_array() {
     EXPECT_EQ_SIZE_T(9, lept_get_array_size(&a));
     for (i = 0; i < 9; i++)
         EXPECT_EQ_DOUBLE((double)i, lept_get_number(lept_get_array_element(&a, i)));
-
     lept_erase_array_element(&a, 4, 0);
     EXPECT_EQ_SIZE_T(9, lept_get_array_size(&a));
     for (i = 0; i < 9; i++)
@@ -591,7 +589,7 @@ static void test_access_array() {
     for (i = 0; i < 6; i++)
         EXPECT_EQ_DOUBLE((double)i + 2, lept_get_number(lept_get_array_element(&a, i)));
 
-#if 0
+#if 1
     for (i = 0; i < 2; i++) {
         lept_init(&e);
         lept_set_number(&e, i);
@@ -626,7 +624,7 @@ static void test_access_array() {
 }
 
 static void test_access_object() {
-#if 0
+#if 1
     lept_value o, v, *pv;
     size_t i, j, index;
 
